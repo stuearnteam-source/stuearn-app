@@ -17,14 +17,10 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Install gdown
-        run: pip install gdown
-
       - name: Download Source ZIP
         run: |
           wget --load-cookies /tmp/cookies.txt "https://drive.google.com/uc?export=download&confirm=$(wget --quiet --save-cookies /tmp/cookies.txt --keep-session-cookies --no-check-certificate 'https://drive.google.com/uc?export=download&id=1HU30eI1T-mOktxL76nT_va5FfbddaGBf' -O- | sed -rn 's/.*confirm=([0-9A-Za-z_]+).*/\1\n/p')&id=1HU30eI1T-mOktxL76nT_va5FfbddaGBf" -O StuEarn.zip
           unzip StuEarn.zip -d source
-          ls source/
 
       - name: Find project root
         run: |
@@ -33,17 +29,14 @@ jobs:
           PROJECT_DIR=$(dirname $GRADLEW)
           echo "PROJECT_DIR=$PROJECT_DIR" >> $GITHUB_ENV
 
-      - name: Update API URL only
+      - name: Update API URL
         run: |
-          PROPS="$PROJECT_DIR/gradle.properties"
-          sed -i 's|API_URL=.*|API_URL="YUhSMGNITTZMeTl0WVhKdmIyNHRabXhoYldsdVoyOHROekt6TmpnNExtaHZjM1JwYm1kbGNuTnBkR1V1WTI5dEx3PT0="|g' $PROPS
-          echo "API URL updated"
+          sed -i 's|API_URL=.*|API_URL="YUhSMGNITTZMeTl0WVhKdmIyNHRabXhoYldsdVoyOHROekt6TmpnNExtaHZjM1JwYm1kbGNuTnBkR1V1WTI5dEx3PT0="|g' $PROJECT_DIR/gradle.properties
 
-      - name: Update App Name only
+      - name: Update App Name
         run: |
-          STRINGS="$PROJECT_DIR/app/src/main/res/values/strings.xml"
-          sed -i 's|<string name="app_name">.*</string>|<string name="app_name">PayHive</string>|g' $STRINGS
-          echo "App name updated to PayHive"
+          sed -i 's|<string name="app_name">.*</string>|<string name="app_name">PayHive</string>|g' $PROJECT_DIR/app/src/main/res/values/strings.xml
+          sed -i 's|"com.app.payhive"|"com.app.stuearn"|g' $PROJECT_DIR/app/google-services.json
 
       - name: Generate Keystore
         run: |
