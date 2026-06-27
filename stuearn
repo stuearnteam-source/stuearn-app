@@ -1,0 +1,10 @@
+org.gradle.jvmargs=-Xmx4048m -Dfile.encoding=UTF-8
+android.useAndroidX=true
+android.nonTransitiveRClass=true
+android.enableJetifier=true
+android.suppressUnsupportedCompileSdk=35,34
+android.enableR8.fullMode=false
+
+API_URL="YUhSMGNITTZMeTl0WVhKdmIyNHRabXhoYldsdVoyOHROekt6TmpnNExtaHZjM1JwYm1kbGNuTnBkR1V1WTI5dEx3PT0="
+
+API_KEY="ZviIamN86JrHOR9dwAIvFXI5vSXqMY"
