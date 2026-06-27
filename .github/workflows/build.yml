@@ -17,10 +17,11 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Download Source ZIP
+      - - name: Download Source ZIP
         run: |
-          https://drive.google.com/file/d/1HU30eI1T-mOktxL76nT_va5FfbddaGBf/view?usp=drivesdk
-
+          curl -L "https://drive.google.com/uc?export=download&id=1HU30eI1T-mOktxL76nT_va5FfbddaGBf&confirm=t" -o StuEarn.zip
+          file StuEarn.zip
+          unzip StuEarn.zip -d source
       - name: Find project root
         run: |
           GRADLEW=$(find source -name "gradlew" | head -1)
