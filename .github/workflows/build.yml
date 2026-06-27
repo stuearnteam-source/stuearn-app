@@ -35,9 +35,14 @@ jobs:
 
       - name: Update App Name
         run: |
+          # Update app name
           sed -i 's|<string name="app_name">.*</string>|<string name="app_name">PayHive</string>|g' $PROJECT_DIR/app/src/main/res/values/strings.xml
-          sed -i 's|"com.app.payhive"|"com.app.stuearn"|g' $PROJECT_DIR/app/google-services.json
-
+          # Remove google-services plugin to avoid package conflict
+          sed -i "s|apply plugin: 'com.google.gms.google-services'||g" $PROJECT_DIR/app/build.gradle
+          sed -i 's|apply plugin: "com.google.gms.google-services"||g' $PROJECT_DIR/app/build.gradle
+          sed -i "s|id 'com.google.gms.google-services'||g" $PROJECT_DIR/app/build.gradle
+          sed -i 's|id("com.google.gms.google-services")||g' $PROJECT_DIR/app/build.gradle
+          echo "Done"
       - name: Generate Keystore
         run: |
           keytool -genkey -v \
