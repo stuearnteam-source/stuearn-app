@@ -1,0 +1,113 @@
+name: Build PayHive APK
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Install gdown
+        run: pip install gdown
+
+      - name: Download Source ZIP from Google Drive
+        run: |
+          gdown "1HU30eI1T-mOktxL76nT_va5FfbddaGBf" -O StuEarn.zip
+          unzip StuEarn.zip -d source
+          ls source/
+
+      - name: Find project root
+        run: |
+          # Find gradlew
+          GRADLEW=$(find source -name "gradlew" | head -1)
+          echo "GRADLEW=$GRADLEW" >> $GITHUB_ENV
+          PROJECT_DIR=$(dirname $GRADLEW)
+          echo "PROJECT_DIR=$PROJECT_DIR" >> $GITHUB_ENV
+          echo "Project dir: $PROJECT_DIR"
+
+      - name: Update API URL in gradle.properties
+        run: |
+          PROPS="$PROJECT_DIR/gradle.properties"
+          echo "Updating: $PROPS"
+          cat $PROPS
+          # Update API URL to new Hostinger URL (double base64 encoded)
+          sed -i 's|API_URL=.*|API_URL="YUhSMGNITTZMeTl0WVhKdmIyNHRabXhoYldsdVoyOHROekt6TmpnNExtaHZjM1JwYm1kbGNuTnBkR1V1WTI5dEx3PT0="|g' $PROPS
+          echo "--- Updated gradle.properties ---"
+          cat $PROPS
+
+      - name: Update Package Name & App Name
+        run: |
+          # Update app name
+          STRINGS="$PROJECT_DIR/app/src/main/res/values/strings.xml"
+          if [ -f "$STRINGS" ]; then
+            sed -i 's|<string name="app_name">.*</string>|<string name="app_name">PayHive</string>|g' $STRINGS
+          fi
+          # Update package name in build.gradle
+          GRADLE="$PROJECT_DIR/app/build.gradle"
+          sed -i 's|applicationId "com.app.stuearn"|applicationId "com.app.payhive"|g' $GRADLE
+          sed -i 's|applicationId "com\.app\.stuearn"|applicationId "com.app.payhive"|g' $GRADLE
+          echo "Package updated"
+
+      - name: Generate Keystore
+        run: |
+          keytool -genkey -v \
+            -keystore payhive.jks \
+            -alias payhive \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -storepass PayHive@2025 \
+            -keypass PayHive@2025 \
+            -dname "CN=PayHive, OU=PayHive, O=PayHive, L=India, ST=India, C=IN"
+          echo "Keystore generated!"
+
+      - name: Make gradlew executable
+        run: chmod +x $PROJECT_DIR/gradlew
+
+      - name: Build Release APK
+        run: |
+          cd $PROJECT_DIR
+          ./gradlew assembleRelease \
+            -Pandroid.injected.signing.store.file=$GITHUB_WORKSPACE/payhive.jks \
+            -Pandroid.injected.signing.store.password=PayHive@2025 \
+            -Pandroid.injected.signing.key.alias=payhive \
+            -Pandroid.injected.signing.key.password=PayHive@2025 \
+            --stacktrace
+        env:
+          GRADLE_OPTS: "-Xmx4g"
+
+      - name: Find APK
+        run: |
+          find $PROJECT_DIR -name "*.apk" -type f
+          APK=$(find $PROJECT_DIR -name "*release*.apk" | head -1)
+          echo "APK_PATH=$APK" >> $GITHUB_ENV
+          echo "Found APK: $APK"
+
+      - name: Rename APK
+        run: |
+          cp "$APK_PATH" PayHive-release.apk
+          ls -lh PayHive-release.apk
+
+      - name: Upload APK as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: PayHive-APK
+          path: PayHive-release.apk
+          retention-days: 30
+
+      - name: Upload Keystore as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: PayHive-Keystore
+          path: payhive.jks
+          retention-days: 30
