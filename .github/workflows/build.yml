@@ -44,8 +44,8 @@ jobs:
         run: |
           STRINGS="$PROJECT_DIR/app/src/main/res/values/strings.xml"
           sed -i 's|<string name="app_name">.*</string>|<string name="app_name">PayHive</string>|g' $STRINGS
-          sed -i 's|applicationId "com.app.stuearn"|applicationId "com.app.payhive"|g' $PROJECT_DIR/app/build.gradle
-
+          # Keep original package name to avoid google-services.json conflict
+          echo "App name updated, keeping original package name"
       - name: Generate Keystore
         run: |
           keytool -genkey -v \
