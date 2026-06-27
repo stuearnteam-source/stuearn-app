@@ -19,8 +19,7 @@ jobs:
 
       - name: Download Source ZIP
         run: |
-          wget --load-cookies /tmp/cookies.txt "https://drive.google.com/uc?export=download&confirm=$(wget --quiet --save-cookies /tmp/cookies.txt --keep-session-cookies --no-check-certificate 'https://drive.google.com/uc?export=download&id=1HU30eI1T-mOktxL76nT_va5FfbddaGBf' -O- | sed -rn 's/.*confirm=([0-9A-Za-z_]+).*/\1\n/p')&id=1HU30eI1T-mOktxL76nT_va5FfbddaGBf" -O StuEarn.zip
-          unzip StuEarn.zip -d source
+          https://drive.google.com/file/d/1HU30eI1T-mOktxL76nT_va5FfbddaGBf/view?usp=drivesdk
 
       - name: Find project root
         run: |
