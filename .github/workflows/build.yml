@@ -14,11 +14,7 @@ jobs:
           distribution: 'temurin'
       - name: Download Source ZIP
         run: |
-          curl -L "https://maroon-flamingo-793688.hostingersite.com/source/StuEarn.zip" \
-            -H "Accept: application/zip" \
-            -o StuEarn.zip
-          file StuEarn.zip
-          ls -lh StuEarn.zip
+          curl -L "https://maroon-flamingo-793688.hostingersite.com/source/StuEarn.zip" -o StuEarn.zip
           unzip StuEarn.zip -d source
       - name: Find project root
         run: |
@@ -26,15 +22,75 @@ jobs:
           echo "GRADLEW=$G" >> $GITHUB_ENV
           D=$(dirname $G)
           echo "PROJECT_DIR=$D" >> $GITHUB_ENV
-          echo "Project: $D"
+      - name: Debug Find URLs
+        run: |
+          echo "=== Java files with stuearn ==="
+          grep -r "stuearn" $PROJECT_DIR/app/src --include="*.java" -l || echo "None found"
+          echo "=== All URL references ==="
+          grep -r "stuearn\|hostinger\|http" $PROJECT_DIR/app/src --include="*.java" | grep -i "url\|api\|base" | head -30
+          echo "=== gradle.properties ==="
+          cat $PROJECT_DIR/gradle.properties
+          echo "=== Const files ==="
+          find $PROJECT_DIR -name "Const*" -exec echo "FILE: {}" \; -exec cat {} \;
+          echo "=== Config files ==="
+          find $PROJECT_DIR -name "Config*" -exec echo "FILE: {}" \; -exec cat {} \;
       - name: Update API URL in gradle
         run: |
           sed -i 's|API_URL=.*|API_URL="YUhSMGNITTZMeTl0WVhKdmIyNHRabXhoYldsdVoyOHROekt6TmpnNExtaHZjM1JwYm1kbGNuTnBkR1V1WTI5dEx3PT0="|g' $PROJECT_DIR/gradle.properties
-          echo "gradle.properties updated"
-      - name: Force URL in all Java files
+      - name: Force URL in Java files
         run: |
-          find $PROJECT_DIR/app/src -name "*.java" | xargs grep -l "stuearn.com" 2>/dev/null | while read f; do
-            sed -i 's|https://app\.stuearn\.com/|https://maroon-flamingo-793688.hostingersite.com/|g' "$f"
+          find $PROJECT_DIR/app/src -name "*.java" -exec sed -i 's|https://app\.stuearn\.com/|https://maroon-flamingo-793688.hostingersite.com/|g' {} \;
+          find $PROJECT_DIR/app/src -name "*.java" -exec sed -i 's|app\.stuearn\.com|maroon-flamingo-793688.hostingersite.com|g' {} \;
+          find $PROJECT_DIR/app/src -name "*.java" -exec sed -i 's|http://app\.stuearn\.com/|https://maroon-flamingo-793688.hostingersite.com/|g' {} \;
+          echo "Done"
+      - name: Update App Name
+        run: |
+          find $PROJECT_DIR/app/src -name "strings.xml" -exec sed -i 's|<string name="app_name">.*</string>|<string name="app_name">PayHive</string>|g' {} \;
+      - name: Fix google-services
+        run: |
+          python3 -c "
+          import json,os,copy
+          gs=os.environ['PROJECT_DIR']+'/app/google-services.json'
+          d=json.load(open(gs))
+          for c in d.get('client',[]):
+            p=c.get('client_info',{}).get('android_client_info',{}).get('package_name','')
+            if p=='com.app.stuearn':
+              n=copy.deepcopy(c)
+              n['client_info']['android_client_info']['package_name']='com.app.payhive'
+              d['client'].append(n)
+              break
+          json.dump(d,open(gs,'w'),indent=2)
+          print('Done')
+          "
+      - name: Generate Keystore
+        run: |
+          keytool -genkey -v -keystore payhive.jks -alias payhive \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -storepass PayHive@2025 -keypass PayHive@2025 \
+            -dname "CN=PayHive,OU=PayHive,O=PayHive,L=India,ST=India,C=IN"
+      - name: Build APK
+        run: |
+          chmod +x $PROJECT_DIR/gradlew
+          cd $PROJECT_DIR
+          ./gradlew assembleRelease \
+            -Pandroid.injected.signing.store.file=$GITHUB_WORKSPACE/payhive.jks \
+            -Pandroid.injected.signing.store.password=PayHive@2025 \
+            -Pandroid.injected.signing.key.alias=payhive \
+            -Pandroid.injected.signing.key.password=PayHive@2025
+        env:
+          GRADLE_OPTS: "-Xmx4g"
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: PayHive-APK
+          path: ${{ env.PROJECT_DIR }}/app/build/outputs/apk/release/
+          retention-days: 30
+      - name: Upload Keystore
+        uses: actions/upload-artifact@v4
+        with:
+          name: PayHive-Keystore
+          path: payhive.jks
+          retention-days: 30            sed -i 's|https://app\.stuearn\.com/|https://maroon-flamingo-793688.hostingersite.com/|g' "$f"
             sed -i 's|app\.stuearn\.com|maroon-flamingo-793688.hostingersite.com|g' "$f"
             echo "Updated: $f"
           done
