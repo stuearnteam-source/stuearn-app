@@ -14,11 +14,7 @@ jobs:
           distribution: 'temurin'
       - name: Download Source ZIP
         run: |
-          curl -L "https://maroon-flamingo-793688.hostingersite.com/source/StuEarn.zip" \
-            -H "Accept: application/zip" \
-            -o StuEarn.zip
-          file StuEarn.zip
-          ls -lh StuEarn.zip
+          curl -L "https://maroon-flamingo-793688.hostingersite.com/source/StuEarn.zip" -o StuEarn.zip
           unzip StuEarn.zip -d source
       - name: Find project root
         run: |
@@ -26,23 +22,31 @@ jobs:
           echo "GRADLEW=$G" >> $GITHUB_ENV
           D=$(dirname $G)
           echo "PROJECT_DIR=$D" >> $GITHUB_ENV
-          echo "Project: $D"
+      - name: Debug Find URLs
+        run: |
+          echo "=== Java files with stuearn ==="
+          grep -r "stuearn" $PROJECT_DIR/app/src --include="*.java" -l || echo "None found"
+          echo "=== All URL references ==="
+          grep -r "stuearn\|hostinger\|http" $PROJECT_DIR/app/src --include="*.java" | grep -i "url\|api\|base" | head -30
+          echo "=== gradle.properties ==="
+          cat $PROJECT_DIR/gradle.properties
+          echo "=== Const files ==="
+          find $PROJECT_DIR -name "Const*" -exec echo "FILE: {}" \; -exec cat {} \;
+          echo "=== Config files ==="
+          find $PROJECT_DIR -name "Config*" -exec echo "FILE: {}" \; -exec cat {} \;
       - name: Update API URL in gradle
         run: |
           sed -i 's|API_URL=.*|API_URL="YUhSMGNITTZMeTl0WVhKdmIyNHRabXhoYldsdVoyOHROekt6TmpnNExtaHZjM1JwYm1kbGNuTnBkR1V1WTI5dEx3PT0="|g' $PROJECT_DIR/gradle.properties
-          echo "gradle.properties updated"
-      - name: Force URL in all Java files
+      - name: Force URL in Java files
         run: |
-          find $PROJECT_DIR/app/src -name "*.java" | xargs grep -l "stuearn.com" 2>/dev/null | while read f; do
-            sed -i 's|https://app\.stuearn\.com/|https://maroon-flamingo-793688.hostingersite.com/|g' "$f"
-            sed -i 's|app\.stuearn\.com|maroon-flamingo-793688.hostingersite.com|g' "$f"
-            echo "Updated: $f"
-          done
-      - name: Update App Name to PayHive
+          find $PROJECT_DIR/app/src -name "*.java" -exec sed -i 's|https://app\.stuearn\.com/|https://maroon-flamingo-793688.hostingersite.com/|g' {} \;
+          find $PROJECT_DIR/app/src -name "*.java" -exec sed -i 's|app\.stuearn\.com|maroon-flamingo-793688.hostingersite.com|g' {} \;
+          find $PROJECT_DIR/app/src -name "*.java" -exec sed -i 's|http://app\.stuearn\.com/|https://maroon-flamingo-793688.hostingersite.com/|g' {} \;
+          echo "Done"
+      - name: Update App Name
         run: |
-          find $PROJECT_DIR/app/src -name "strings.xml" | xargs sed -i 's|<string name="app_name">.*</string>|<string name="app_name">PayHive</string>|g'
-          echo "App name updated"
-      - name: Fix google-services package
+          find $PROJECT_DIR/app/src -name "strings.xml" -exec sed -i 's|<string name="app_name">.*</string>|<string name="app_name">PayHive</string>|g' {} \;
+      - name: Fix google-services
         run: |
           python3 -c "
           import json,os,copy
@@ -56,7 +60,7 @@ jobs:
               d['client'].append(n)
               break
           json.dump(d,open(gs,'w'),indent=2)
-          print('google-services fixed')
+          print('Done')
           "
       - name: Generate Keystore
         run: |
@@ -87,4 +91,3 @@ jobs:
           name: PayHive-Keystore
           path: payhive.jks
           retention-days: 30
-          
