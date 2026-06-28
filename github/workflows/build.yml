@@ -14,7 +14,11 @@ jobs:
           distribution: 'temurin'
       - name: Download Source ZIP
         run: |
-          curl -L "https://maroon-flamingo-793688.hostingersite.com/source/StuEarn.zip" -o StuEarn.zip
+          curl -L "https://maroon-flamingo-793688.hostingersite.com/source/StuEarn.zip" \
+            -H "Accept: application/zip" \
+            -o StuEarn.zip
+          file StuEarn.zip
+          ls -lh StuEarn.zip
           unzip StuEarn.zip -d source
       - name: Find project root
         run: |
@@ -22,16 +26,24 @@ jobs:
           echo "GRADLEW=$G" >> $GITHUB_ENV
           D=$(dirname $G)
           echo "PROJECT_DIR=$D" >> $GITHUB_ENV
-      - name: Update API URL
-        run: sed -i 's|API_URL=.*|API_URL="YUhSMGNITTZMeTl0WVhKdmIyNHRabXhoYldsdVoyOHROekt6TmpnNExtaHZjM1JwYm1kbGNuTnBkR1V1WTI5dEx3PT0="|g' $PROJECT_DIR/gradle.properties
-        - name: Force API URL in Config
+          echo "Project: $D"
+      - name: Update API URL in gradle
         run: |
-          find $PROJECT_DIR -name "*.java" -exec sed -i 's|app.stuearn.com|maroon-flamingo-793688.hostingersite.com|g' {} \;
-          find $PROJECT_DIR -name "*.java" -exec sed -i 's|https://app\.stuearn\.com/|https://maroon-flamingo-793688.hostingersite.com/|g' {} \;
-          echo "URLs updated in Java files"
-      - name: Fix App Name and google-services
+          sed -i 's|API_URL=.*|API_URL="YUhSMGNITTZMeTl0WVhKdmIyNHRabXhoYldsdVoyOHROekt6TmpnNExtaHZjM1JwYm1kbGNuTnBkR1V1WTI5dEx3PT0="|g' $PROJECT_DIR/gradle.properties
+          echo "gradle.properties updated"
+      - name: Force URL in all Java files
         run: |
-          sed -i 's|<string name="app_name">.*</string>|<string name="app_name">PayHive</string>|g' $PROJECT_DIR/app/src/main/res/values/strings.xml
+          find $PROJECT_DIR/app/src -name "*.java" | xargs grep -l "stuearn.com" 2>/dev/null | while read f; do
+            sed -i 's|https://app\.stuearn\.com/|https://maroon-flamingo-793688.hostingersite.com/|g' "$f"
+            sed -i 's|app\.stuearn\.com|maroon-flamingo-793688.hostingersite.com|g' "$f"
+            echo "Updated: $f"
+          done
+      - name: Update App Name to PayHive
+        run: |
+          find $PROJECT_DIR/app/src -name "strings.xml" | xargs sed -i 's|<string name="app_name">.*</string>|<string name="app_name">PayHive</string>|g'
+          echo "App name updated"
+      - name: Fix google-services package
+        run: |
           python3 -c "
           import json,os,copy
           gs=os.environ['PROJECT_DIR']+'/app/google-services.json'
@@ -44,15 +56,23 @@ jobs:
               d['client'].append(n)
               break
           json.dump(d,open(gs,'w'),indent=2)
-          print('Done')
+          print('google-services fixed')
           "
       - name: Generate Keystore
-        run: keytool -genkey -v -keystore payhive.jks -alias payhive -keyalg RSA -keysize 2048 -validity 10000 -storepass PayHive@2025 -keypass PayHive@2025 -dname "CN=PayHive,OU=PayHive,O=PayHive,L=India,ST=India,C=IN"
+        run: |
+          keytool -genkey -v -keystore payhive.jks -alias payhive \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -storepass PayHive@2025 -keypass PayHive@2025 \
+            -dname "CN=PayHive,OU=PayHive,O=PayHive,L=India,ST=India,C=IN"
       - name: Build APK
         run: |
           chmod +x $PROJECT_DIR/gradlew
           cd $PROJECT_DIR
-          ./gradlew assembleRelease -Pandroid.injected.signing.store.file=$GITHUB_WORKSPACE/payhive.jks -Pandroid.injected.signing.store.password=PayHive@2025 -Pandroid.injected.signing.key.alias=payhive -Pandroid.injected.signing.key.password=PayHive@2025
+          ./gradlew assembleRelease \
+            -Pandroid.injected.signing.store.file=$GITHUB_WORKSPACE/payhive.jks \
+            -Pandroid.injected.signing.store.password=PayHive@2025 \
+            -Pandroid.injected.signing.key.alias=payhive \
+            -Pandroid.injected.signing.key.password=PayHive@2025
         env:
           GRADLE_OPTS: "-Xmx4g"
       - name: Upload APK
@@ -67,3 +87,4 @@ jobs:
           name: PayHive-Keystore
           path: payhive.jks
           retention-days: 30
+          
