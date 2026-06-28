@@ -17,10 +17,10 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - - name: Download Source ZIP
+      - name: Download Source ZIP
         run: |
-          curl -L "https://drive.google.com/uc?export=download&id=1HU30eI1T-mOktxL76nT_va5FfbddaGBf&confirm=t" -o StuEarn.zip
-          file StuEarn.zip
+          curl -L "https://maroon-flamingo-793688.hostingersite.com/source/StuEarn.zip" -o StuEarn.zip
+          unzip StuEarn.zip -d source
           unzip StuEarn.zip -d source
       - name: Find project root
         run: |
