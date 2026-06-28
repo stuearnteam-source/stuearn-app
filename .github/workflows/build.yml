@@ -24,6 +24,11 @@ jobs:
           echo "PROJECT_DIR=$D" >> $GITHUB_ENV
       - name: Update API URL
         run: sed -i 's|API_URL=.*|API_URL="YUhSMGNITTZMeTl0WVhKdmIyNHRabXhoYldsdVoyOHROekt6TmpnNExtaHZjM1JwYm1kbGNuTnBkR1V1WTI5dEx3PT0="|g' $PROJECT_DIR/gradle.properties
+        - name: Force API URL in Config
+        run: |
+          find $PROJECT_DIR -name "*.java" -exec sed -i 's|app.stuearn.com|maroon-flamingo-793688.hostingersite.com|g' {} \;
+          find $PROJECT_DIR -name "*.java" -exec sed -i 's|https://app\.stuearn\.com/|https://maroon-flamingo-793688.hostingersite.com/|g' {} \;
+          echo "URLs updated in Java files"
       - name: Fix App Name and google-services
         run: |
           sed -i 's|<string name="app_name">.*</string>|<string name="app_name">PayHive</string>|g' $PROJECT_DIR/app/src/main/res/values/strings.xml
